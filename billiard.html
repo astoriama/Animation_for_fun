@@ -1,99 +1,313 @@
 <!DOCTYPE html>
-
 <html>
-    <head>
-        <title>Billiard</title>
-    </head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <body>
-        <canvas id = "myCanvas" style = "border:2px solid"></canvas>
+	<head>
+		<title>Billiard</title>
+		<style>
+			body {
+				font-family: verdana; 
+				font-size: 15px;
+			}			
+			.button {
+				background-color: #606060;
+				border: none;
+				color: white;
+				padding: 10px 32px;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+			.slider {
+				-webkit-appearance: none;
+				width: 80px;
+				height: 6px;
+				border-radius: 5px;
+				background: #d3d3d3;
+				outline: none;
+				opacity: 0.7;
+				-webkit-transition: .2s;
+				transition: opacity .2s;
+			}
+		</style>
+	</head>
+	
+<body>
 
-        <script>
-            // canvas stepup
-            var canvas = document.getElementById("myCanvas");
-            var c = canvas.getContext("2d");
+	<button class="button" onclick="setupScene()">Change Strength and Reset</button>
+	Stength <input type = "range" min = "0" max = "10" value = "10" id = "restitutionSlider" class = "slider">
+	<br>
+	<canvas id="myCanvas" style="border:2px solid"></canvas>
+	<div id="result"></div>
+<script>
 
-            canvas.width = window.innerWidth -20;
-            canvas.height = window.innerHeight -100;
+	// drawing -------------------------------------------------------
 
-            // map from camera_projection space to image space
-            // canvas originally has 0,0 coordinare on the upper left corner
-            var simMinWidth = 20.0;
-            var cScale = Math.min(canvas.width, canvas.height)/simMinWidth;
-            var simWidth = canvas.width/cScale;
-            var simheight = canvas.height/cScale;
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");
+
+	canvas.width = window.innerWidth - 20;
+	canvas.height = window.innerHeight - 100;
+
+	var simMinWidth = 2.0;
+	var cScale = Math.min(canvas.width, canvas.height) / simMinWidth;
+	var simWidth = canvas.width / cScale;
+	var simHeight = canvas.height / cScale;
+
+	function cX(pos) {
+		return pos.x * cScale;
+	}
+
+	function cY(pos) {
+		return canvas.height - pos.y * cScale;
+	}
+
+	// vector math -------------------------------------------------------
+
+	class Vector2 {
+		constructor(x = 0.0, y = 0.0) {
+			this.x = x; 
+			this.y = y;
+		}
+
+		set(v) {
+			this.x = v.x; this.y = v.y;
+		}
+
+		clone() {
+			return new Vector2(this.x, this.y);
+		}
+
+		add(v, s = 1.0) {
+			this.x += v.x * s;
+			this.y += v.y * s;
+			return this;
+		}
+
+		addVectors(a, b) {
+			this.x = a.x + b.x;
+			this.y = a.y + b.y;
+			return this;
+		}
+
+		subtract(v, s = 1.0) {
+			this.x -= v.x * s;
+			this.y -= v.y * s;
+			return this;
+		}
+
+		subtractVectors(a, b) {
+			this.x = a.x - b.x;
+			this.y = a.y - b.y;
+			return this;			
+		}
+
+		length() {
+			return Math.sqrt(this.x * this.x + this.y * this.y);
+		}
+
+		scale(s) {
+			this.x *= s;
+			this.y *= s;
+		}
+
+		dot(v) {
+			return this.x * v.x + this.y * v.y;
+		}
+	}
+
+	// physics scene -------------------------------------------------------
+
+	class Ball {
+		constructor(radius, mass, pos, vel) {
+			this.radius = radius;
+			this.mass = mass;
+			this.pos = pos.clone();
+			this.vel = vel.clone();
+		}
+		simulate(dt, gravity) {
+			this.vel.add(gravity, dt);
+			this.pos.add(this.vel, dt);
+		}
+	}
+
+	var physicsScene = 
+	{
+		gravity : new Vector2(0.0, 0.0),
+		dt : 1.0 / 60.0,
+		worldSize : new Vector2(simWidth, simHeight),
+		paused: true,
+		balls: [],				
+		restitution : 1.0
+	};
+
+    var whiteBall;
+    // window.onload = function() {
+    //     document.getElementById("restitutionSlider").disabled = false;
+    // };
+
+	function setupScene() 
+	{
+        // document.getElementById("restitutionSlider").disabled = true;
+
+		physicsScene.balls = [];
+        var pairs = [
+            [0.8, 0.8], // First column
+            [0.8, 0.8+0.16], // First column
+            [0.8, 0.8+0.16*2], // First column
+            [0.8, 0.8+0.16*3], // First column
+            [0.8, 0.8+0.16*4], // First column
+            [0.8+Math.sqrt(3)*0.08,0.88], // Second column
+            [0.8+Math.sqrt(3)*0.08,0.88+0.16], // Second column
+            [0.8+Math.sqrt(3)*0.08,0.88+0.16*2], // Second column
+            [0.8+Math.sqrt(3)*0.08,0.88+0.16*3], // Second column
+            [0.8+2*Math.sqrt(3)*0.08,0.96], // third column
+            [0.8+2*Math.sqrt(3)*0.08,0.96+0.16], // third column
+            [0.8+2*Math.sqrt(3)*0.08,0.96+0.16*2], // third column
+            [0.8+3*Math.sqrt(3)*0.08,1.04], // forth column
+            [0.8+3*Math.sqrt(3)*0.08,1.04+0.16], // forth column
+            [0.8+4*Math.sqrt(3)*0.08,1.12]// fifth column
+            ];
+		for (x = 0; x<pairs.length; x++) {
+            var radius = 0.077;
+            var mass = Math.PI * radius * radius;
+            var pos = new Vector2(pairs[x][0],pairs[x][1])
+            var vel = new Vector2(0,0);
             
-            // scaling x
-            function cX(pos){return pos.x*cScale;}
-            // scaling and flipping y
-            function cY(pos){return canvas.height - pos.y*cScale;}
+            physicsScene.balls.push(new Ball(radius, mass, pos, vel));
             
-            // scene -------------------------------
-            var gravity = {x:0.0, y: -10.0};
-            var timeStep = 1.0/60.0;
-            var ball = {
-                radius : 0.4,
-                pos: {x:0.2, y:0.2},
-                // initialize velocity of the begining 
-                vel: {x:10.0, y:15.0}
-            };
-            
-            // drawing -----------------------------
-            function draw(){
-                // clear canvas
-                c.clearRect(0,0,canvas.width,canvas.height);
+        }
+        // var whiteBallVelocity = calculateVelocity(sliderValue);
+        var radius = 0.077;
+        var mass = Math.PI * radius * radius;
+        var pos = new Vector2(3.3,1.12)
+        var vel = new Vector2(-2,0);
+        // var vel = whiteBallVelocity;
+        whiteBall = new Ball(radius, mass, pos, vel);
+        physicsScene.balls.push(whiteBall);
+        
+        
+        
+	}
+    function calculateVelocity(sliderVal) {
+        var result = -2;
+        var result = -2 + -3 * (sliderVal / 10.0);
+        return result; // Adjust this formula as needed
+    }
 
-                c.fillStyle = "#FFC0CB";
+   
 
-                c.beginPath();
+	// draw -------------------------------------------------------
 
-                c.arc(
-                    cX(ball.pos), cY(ball.pos), cScale * ball.radius, 0.0, 2.0*Math.PI);
-                c.closePath();
-                c.fill();
+	function draw() 
+	{
 
-            }
-
-            // simulation
-            function simulate(){
-                ball.vel.x += gravity.x*timeStep;
-                ball.vel.y += gravity.y*timeStep;
-                ball.pos.x += ball.vel.x*timeStep;
-                ball.pos.y += ball.vel.y*timeStep;
-                // bound by canvas height and width
-                if (ball.pos.x < 0.0){
-                    ball.pos.x = 0.0;
-                    ball.vel.x = -ball.vel.x; // bounce back, i believe
-                }
+        // Set the background color
+        c.fillStyle = "#004d00"; // Dark green for pool table
+        c.fillRect(0, 0, canvas.width, canvas.height); // Cover the canvas with the dark blue color
                 
-                if (ball.pos.x > simWidth){
-                    ball.pos.x = simWidth;
-                    ball.vel.x = -ball.vel.x; // bounce back, i believe
-                }
+		
+        var colorList = ["#FF8080","#C080FF","#FFC080","#80C080","#C08080",
+                        "#8080FF","#FFFF80","#000000","#800000","#800080",
+                        "#FFA500","#008000","#FF0000","#0000FF","#FFFF00","#FFFFFF"]
+		for (i = 0; i < physicsScene.balls.length; i++) {
+            c.fillStyle = colorList[i];
+			var ball = physicsScene.balls[i];
+			c.beginPath();			
+			c.arc(
+				cX(ball.pos), cY(ball.pos), cScale * ball.radius, 0.0, 2.0 * Math.PI); 
+			c.closePath();
+			c.fill();
+		}
+	}
 
-                if (ball.pos.y < 0.0){
-                    ball.pos.y = 0.0;
-                    ball.vel.y = -ball.vel.y; // bounce back, i believe
-                }
-                if (ball.pos.y > simheight){
-                    ball.pos.y = simheight;
-                    ball.vel.y = -ball.vel.y; // bounce back, i believe
-                }
-            }
+	// collision handling -------------------------------------------------------
 
-            
+	function handleBallCollision(ball1, ball2, restitution) 
+	{
+		var dir = new Vector2();
+		dir.subtractVectors(ball2.pos, ball1.pos);
+		var d = dir.length();
+		if (d == 0.0 || d > ball1.radius + ball2.radius)
+			return;
 
-            // make browser to call us repeatedly
-            function update(){
-                simulate();
-                draw();
-                requestAnimationFrame(update);
-            }
+		dir.scale(1.0 / d);
 
-            update();
+		var corr = (ball1.radius + ball2.radius - d) / 2.0;
+		ball1.pos.add(dir, -corr);
+		ball2.pos.add(dir, corr);
 
+		var v1 = ball1.vel.dot(dir);
+		var v2 = ball2.vel.dot(dir);
 
-        </script>
-    </body>
+		var m1 = ball1.mass;
+		var m2 = ball2.mass;
 
+		var newV1 = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * restitution) / (m1 + m2);
+		var newV2 = (m1 * v1 + m2 * v2 - m1 * (v2 - v1) * restitution) / (m1 + m2);
+
+		ball1.vel.add(dir, newV1 - v1);
+		ball2.vel.add(dir, newV2 - v2);
+	}
+
+	// ------------------------------------------------------
+
+	function handleWallCollision(ball, worldSize) 
+	{
+		if (ball.pos.x < ball.radius) {
+			ball.pos.x = ball.radius;
+			ball.vel.x = -ball.vel.x;
+		}
+		if (ball.pos.x > worldSize.x - ball.radius) {
+			ball.pos.x = worldSize.x - ball.radius;
+			ball.vel.x = -ball.vel.x;
+		}
+		if (ball.pos.y < ball.radius) {
+			ball.pos.y = ball.radius;
+			ball.vel.y = -ball.vel.y;
+		}
+
+		if (ball.pos.y > worldSize.y - ball.radius) {
+			ball.pos.y = worldSize.y - ball.radius;
+			ball.vel.y = -ball.vel.y;
+		}
+	}
+
+	// simulation -------------------------------------------------------
+
+	function simulate() 
+	{
+		for (i = 0; i < physicsScene.balls.length; i++) {
+			var ball1 = physicsScene.balls[i];
+			ball1.simulate(physicsScene.dt, physicsScene.gravity);
+
+			for (j = i + 1; j < physicsScene.balls.length; j++) {
+				var ball2 = physicsScene.balls[j];
+				handleBallCollision(ball1, ball2, physicsScene.restitution);
+			}
+
+			handleWallCollision(ball1, physicsScene.worldSize);
+		}
+	}
+
+	function update() {
+		simulate();
+		draw();
+		requestAnimationFrame(update);
+	}
+	
+	
+
+	document.getElementById("restitutionSlider").oninput = function() {
+		var sliderValue = this.value; // Get the current value of the slider
+        var newVelocity = -5 + (3 * (sliderValue / 10.0)); // Calculate the new velocity based on the slider value
+        whiteBall.vel.x = newVelocity;
+        // var sliderValue = this.value;
+
+	}
+    setupScene();
+	update();
+	
+</script> 
+</body>
 </html>
