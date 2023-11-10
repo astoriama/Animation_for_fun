@@ -2,7 +2,7 @@
 
 <html>
     <head>
-        <title>Cannon Ball</title>
+        <title>Billiard</title>
     </head>
 
     <body>
@@ -22,10 +22,12 @@
             var cScale = Math.min(canvas.width, canvas.height)/simMinWidth;
             var simWidth = canvas.width/cScale;
             var simheight = canvas.height/cScale;
+            
             // scaling x
             function cX(pos){return pos.x*cScale;}
             // scaling and flipping y
             function cY(pos){return canvas.height - pos.y*cScale;}
+            
             // scene -------------------------------
             var gravity = {x:0.0, y: -10.0};
             var timeStep = 1.0/60.0;
@@ -35,6 +37,7 @@
                 // initialize velocity of the begining 
                 vel: {x:10.0, y:15.0}
             };
+            
             // drawing -----------------------------
             function draw(){
                 // clear canvas

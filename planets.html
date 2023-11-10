@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Planets</title>
+    </head>
+
+    <body>
+        <canvas id = "myCanvas" style = "border:2px solid"></canvas>
+
+        <script>
+            // canvas stepup
+            var canvas = document.getElementById("myCanvas");
+            var c = canvas.getContext("2d");
+
+            canvas.width = window.innerWidth -20;
+            canvas.height = window.innerHeight -100;
+
+            // map from camera_projection space to image space
+            // canvas originally has 0,0 coordinare on the upper left corner
+            var simMinWidth = 20.0;
+            var cScale = Math.min(canvas.width, canvas.height)/simMinWidth;
+            var simWidth = canvas.width/cScale;
+            var simheight = canvas.height/cScale;
+            
+            // scaling x
+            function cX(pos){return pos.x*cScale;}
+            // scaling and flipping y
+            function cY(pos){return canvas.height - pos.y*cScale;}
+            
+            // scene -------------------------------
+            var murcuryGravity = {x:0.0, y: -3.7};
+            var earthGravity = {x:0.0, y: -9.8};
+            var venusGravity = {x:0.0, y: -8.9};
+            var marsGravity = {x:0.0, y: -3.7};
+            var jupiterGravity = {x:0.0, y: -24.8};
+            var saturnGravity = {x:0.0, y: -10.4};
+            var uranusGravity = {x:0.0, y: -8.9};
+            var neptuneGravity = {x:0.0, y: -11.2};
+            var timeStep = 1.0/60.0;
+
+            var Star = {
+                radius : 0.1,
+                pos: {x:0.2, y:0.2},
+                // initialize velocity of the begining 
+                vel: {x:30.0, y:20.0}
+            };
+
+            
+            var Mercury = {
+                radius : 0.4,
+                pos: {x:2, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+            var Venus = {
+                radius : 0.4,
+                pos: {x:7, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+
+            
+            var Earth = {
+                radius : 0.4,
+                pos: {x:12, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+            var Mars = {
+                radius : 0.4,
+                pos: {x:17, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+            var Jupiter = {
+                radius : 0.4,
+                pos: {x:22, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+            var Saturn = {
+                radius : 0.4,
+                pos: {x:27, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+            var Uranus = {
+                radius : 0.4,
+                pos: {x:32, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+            var Neptune = {
+                radius : 0.4,
+                pos: {x:37, y:20},
+                // initialize velocity of the begining 
+                vel: {x:0.0, y:0.0}
+            };
+
+
+
+            // drawing -----------------------------
+            function draw(){
+                // clear canvas
+                c.clearRect(0,0,canvas.width,canvas.height);
+                
+                // Set the background color
+                c.fillStyle = "#191970"; // Dark blue color
+                c.fillRect(0, 0, canvas.width, canvas.height); // Cover the canvas with the dark blue color
+                
+                // Draw Earth
+                c.fillStyle = "#107ab0"; // blue
+                c.beginPath();
+                c.arc(
+                    cX(Earth.pos), cY(Earth.pos), cScale * Earth.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Mercury
+                c.fillStyle = "#9f9c91"; // brown
+                c.beginPath();
+                c.arc(
+                    cX(Mercury.pos), cY(Mercury.pos), cScale * Mercury.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Venus
+                c.fillStyle = "#ede3a1"; // pale yellow
+                c.beginPath();
+                c.arc(
+                    cX(Venus.pos), cY(Venus.pos), cScale * Venus.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Mars
+                c.fillStyle = "#b14934"; // reddish brown
+                c.beginPath();
+                c.arc(
+                    cX(Mars.pos), cY(Mars.pos), cScale * Mars.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Jupiter
+                c.fillStyle = "#d8caa8"; // Pale Orange 
+                c.beginPath();
+                c.arc(
+                    cX(Jupiter.pos), cY(Jupiter.pos), cScale * Jupiter.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Saturn
+                c.fillStyle = "#e3cf57"; // Golden Beige
+                c.beginPath();
+                c.arc(
+                    cX(Saturn.pos), cY(Saturn.pos), cScale * Saturn.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Uranus
+                c.fillStyle = "#8eecf5"; // pale blue
+                c.beginPath();
+                c.arc(
+                    cX(Uranus.pos), cY(Uranus.pos), cScale * Uranus.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+                // Draw Neptune
+                c.fillStyle = "#4267b2"; // bright blue
+                c.beginPath();
+                c.arc(
+                    cX(Neptune.pos), cY(Neptune.pos), cScale * Neptune.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+
+                // Draw Star
+                c.fillStyle = "rgba(255, 255, 255, 0.5)"; // transparent white
+                c.beginPath();
+                c.arc(
+                    cX(Star.pos), cY(Star.pos), cScale * Star.radius, 0.0, 2.0*Math.PI);
+                c.closePath();
+                c.fill();
+
+            }
+
+            // simulation
+            function simulate(ball, gravity){
+                ball.vel.x += gravity.x*timeStep;
+                ball.vel.y += gravity.y*timeStep;
+                ball.pos.x += ball.vel.x*timeStep;
+                ball.pos.y += ball.vel.y*timeStep;
+                // bound by canvas height and width
+                if (ball.pos.x < 0.0){
+                    ball.pos.x = 0.0;
+                    ball.vel.x = -ball.vel.x; // bounce back, i believe
+                }
+                
+                if (ball.pos.x > simWidth){
+                    ball.pos.x = simWidth;
+                    ball.vel.x = -ball.vel.x; // bounce back, i believe
+                }
+
+                if (ball.pos.y < 0.0){
+                    ball.pos.y = 0.0;
+                    ball.vel.y = -ball.vel.y; // bounce back, i believe
+                }
+                if (ball.pos.y > simheight){
+                    ball.pos.y = simheight;
+                    ball.vel.y = -ball.vel.y; // bounce back, i believe
+                }
+            }
+
+            
+
+            // make browser to call us repeatedly
+            function update(){
+                
+                simulate(Mercury, murcuryGravity);
+                simulate(Star, earthGravity);
+                simulate(Earth, earthGravity);
+                simulate(Venus, venusGravity);
+                simulate(Mars, marsGravity);
+                simulate(Jupiter, jupiterGravity);
+                simulate(Saturn, saturnGravity);
+                simulate(Uranus, uranusGravity);
+                simulate(Neptune, neptuneGravity);
+                draw();
+                requestAnimationFrame(update);
+            }
+
+            update();
+
+
+        </script>
+    </body>
+
+</html>
