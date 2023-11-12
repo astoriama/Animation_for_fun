@@ -181,7 +181,7 @@
         var radius = 0.077;
         var mass = Math.PI * radius * radius;
         var pos = new Vector2(3.3,1.12)
-        var vel = new Vector2(-2,0);
+        var vel = new Vector2(-5,0);
         // var vel = whiteBallVelocity;
         whiteBall = new Ball(radius, mass, pos, vel);
         physicsScene.balls.push(whiteBall);
@@ -276,7 +276,8 @@
 	// simulation -------------------------------------------------------
 
 	function simulate() 
-	{
+	{   
+        physicsScene.restitution = 0.5;
 		for (i = 0; i < physicsScene.balls.length; i++) {
 			var ball1 = physicsScene.balls[i];
 			ball1.simulate(physicsScene.dt, physicsScene.gravity);
