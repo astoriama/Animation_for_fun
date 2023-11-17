@@ -242,9 +242,9 @@
 
 		var m1 = ball1.mass;
 		var m2 = ball2.mass;
-		var dampingFactor = 0.6;
-		var newV1 = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * restitution*(1-dampingFactor)) / (m1 + m2);
-		var newV2 = (m1 * v1 + m2 * v2 - m1 * (v2 - v1) * restitution*(1-dampingFactor)) / (m1 + m2);
+		var dampingFactor = 0.3;
+		var newV1 = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * restitution*(dampingFactor)) / (m1 + m2);
+		var newV2 = (m1 * v1 + m2 * v2 - m1 * (v2 - v1) * restitution*(dampingFactor)) / (m1 + m2);
 
 		ball1.vel.add(dir, newV1 - v1);
 		ball2.vel.add(dir, newV2 - v2);
@@ -301,11 +301,8 @@
 
 	document.getElementById("restitutionSlider").oninput = function() {
 		var sliderValue = this.value; // Get the current value of the slider
-        var newVelocity = -5 + (3 * (sliderValue / 10.0)); // Calculate the new velocity based on the slider value
         whiteBall.vel.x = (sliderValue/10+1)*whiteBall.vel.x;
         whiteBall.vel.y = (sliderValue/10+1)*whiteBall.vel.y;
-        // var sliderValue = this.value;
-
 	}
     setupScene();
 	update();
