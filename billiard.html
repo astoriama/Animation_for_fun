@@ -300,9 +300,10 @@
 	
 
 	document.getElementById("restitutionSlider").oninput = function() {
-		var sliderValue = 10-this.value; // Get the current value of the slider
+		var sliderValue = this.value; // Get the current value of the slider
         var newVelocity = -5 + (3 * (sliderValue / 10.0)); // Calculate the new velocity based on the slider value
-        whiteBall.vel.x = newVelocity;
+        whiteBall.vel.x = (sliderValue/10+1)*whiteBall.vel.x;
+        whiteBall.vel.y = (sliderValue/10+1)*whiteBall.vel.y;
         // var sliderValue = this.value;
 
 	}
